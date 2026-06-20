@@ -1,19 +1,22 @@
+import os
 from pathlib import Path
+os.environ["TORCH_BLAS_PREFER_CUBLASLT"] = "0"
+os.environ["DISABLE_ADDMM_CUDA_LT"] = "1"
 import torch
 import torch.nn.functional as F
 from diffusers import DDPMScheduler
 from tqdm import tqdm
 from data import get_dataloader
-from model import SimpleNoiseNet
-batch_size = 16
-num_epochs = 50
+from model import PointNetUNet
+batch_size = 3
+num_epochs = 20
 lr = 1e-4
-num_train_timesteps = 1000
-save_path = "checkpoints/simple_noise_net.pth"
+num_train_timesteps = 8000
+save_path = "checkpoints/pointnet_unet_chair.pth"
 def train():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     dataloader = get_dataloader(batch_size=batch_size)
-    model = SimpleNoiseNet().to(device)
+    model = PointNetUNet().to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     scheduler = DDPMScheduler(num_train_timesteps=num_train_timesteps)
     for epoch in range(num_epochs):
@@ -32,6 +35,7 @@ def train():
         avg_loss = total_loss / len(dataloader)
         print("epoch:", epoch + 1, "loss:", avg_loss)
         Path("checkpoints").mkdir(exist_ok=True)
-        torch.save(model.state_dict(), save_path)
+        if (epoch + 1) % 5 == 0:
+            torch.save(model.state_dict(), save_path)
 if __name__ == "__main__":
     train()
