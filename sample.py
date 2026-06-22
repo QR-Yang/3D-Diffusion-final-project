@@ -5,10 +5,10 @@ os.environ["DISABLE_ADDMM_CUDA_LT"] = "1"
 import torch
 from diffusers import DDPMScheduler
 from model import PointNetUNet
-num_points = 8192 * 2
+num_points = 4096*4
 num_train_timesteps = 8000
 num_inference_steps = 8000
-checkpoint_path = "checkpoints/pointnet_unet_chair.pth"
+checkpoint_path = "checkpoints/pointnet_unet_airplain_8192*2_2e-5_8000.pth"
 save_dir = "outputs"
 def save_ply(points, path):
     with open(path, "w") as f:
@@ -21,16 +21,6 @@ def save_ply(points, path):
         f.write("end_header\n")
         for p in points:
             f.write(f"{p[0]} {p[1]} {p[2]}\n")
-def clean_points(points):
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    x = torch.tensor(points, device=device).float()
-    with torch.no_grad():
-        dist = torch.cdist(x, x)
-        knn = dist.topk(17, largest=False).values[:, 1:]
-        score = knn.mean(dim=1)
-        keep = score < score.mean() + 1.5 * score.std()
-    points = points[keep.cpu().numpy()]
-    return points
 def sample():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = PointNetUNet().to(device)
@@ -45,7 +35,6 @@ def sample():
             noise_pred = model(x, timestep)
             x = scheduler.step(noise_pred, t, x).prev_sample
     points = x[0].cpu().numpy()
-    points = clean_points(points)
     Path(save_dir).mkdir(exist_ok=True)
     save_ply(points, f"{save_dir}/sample_chair.ply")
     print("saved:", f"{save_dir}/sample_chair.ply")

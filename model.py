@@ -51,11 +51,28 @@ def gather_points(x, index):
     return out
 def gather_neighbors(x, index):
     batch_size = x.shape[0]
-    batch_index = torch.arange(batch_size)
+    batch_index = torch.arange(batch_size, device=x.device)
     batch_index = batch_index.view(batch_size, 1, 1)
     batch_index = batch_index.repeat(1, index.shape[1], index.shape[2])
     out = x[batch_index, index]
     return out
+def fps_sample(pos, num_sample):
+    batch_size = pos.shape[0]
+    num_points = pos.shape[1]
+    device = pos.device
+    sample_index = torch.zeros(batch_size, num_sample, dtype=torch.long, device=device)
+    distance = torch.ones(batch_size, num_points, device=device) * 1e10
+    farthest = torch.randint(0, num_points, (batch_size,), device=device)
+    batch_index = torch.arange(batch_size, device=device)
+    for i in range(num_sample):
+        sample_index[:, i] = farthest
+        center = pos[batch_index, farthest]
+        center = center.view(batch_size, 1, 3)
+        dist = ((pos - center) ** 2).sum(dim=2)
+        mask = dist < distance
+        distance[mask] = dist[mask]
+        farthest = distance.max(dim=1).indices
+    return sample_index
 class DownBlock(nn.Module):
     def __init__(self, num_sample, k_list, in_channels, out_channels):
         super().__init__()
@@ -70,12 +87,7 @@ class DownBlock(nn.Module):
         self.res1 = ResidualBlock(out_channels)
         self.res2 = ResidualBlock(out_channels)
     def forward(self, x, pos):
-        batch_size = x.shape[0]
-        num_points = x.shape[1]
-        sample_index = torch.randperm(num_points, device=x.device)
-        sample_index = sample_index[: self.num_sample]
-        sample_index = sample_index.unsqueeze(0)
-        sample_index = sample_index.repeat(batch_size, 1)
+        sample_index = fps_sample(pos, self.num_sample)
         new_pos = gather_points(pos, sample_index)
         dist = torch.cdist(new_pos, pos)
         neighbor_index = dist.topk(self.max_k, largest=False).indices
@@ -121,9 +133,9 @@ class PointNetUNet(nn.Module):
         self.time_embedding = TimeEmbedding(128)
         self.input_mlp = mlp([3 + 128, 128, 128])
         self.input_res = ResidualBlock(128)
-        self.down1 = DownBlock(2048, [16, 64, 256], 128, 256)
-        self.down2 = DownBlock(512, [16, 64, 256], 256, 512)
-        self.down3 = DownBlock(128, [16, 64, 256], 512, 768)
+        self.down1 = DownBlock(512, [16, 32, 64], 128, 256)
+        self.down2 = DownBlock(128, [16, 32, 64], 256, 512)
+        self.down3 = DownBlock(32, [16, 32, 64], 512, 768)
         self.time0 = nn.Linear(128, 128)
         self.time1 = nn.Linear(128, 256)
         self.time2 = nn.Linear(128, 512)
@@ -155,7 +167,7 @@ class PointNetUNet(nn.Module):
         return out
 if __name__ == "__main__":
     model = PointNetUNet()
-    x = torch.randn(1, 8192 * 2, 3)
+    x = torch.randn(1, 4096, 3)
     t = torch.randint(0, 5000, (1,))
     y = model(x, t)
     print(y.shape)
