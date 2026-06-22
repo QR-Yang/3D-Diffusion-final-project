@@ -1,74 +1,71 @@
-# Point Cloud DDPM
+# 3D-Diffusion-final-project
 
-This project trains a DDPM point cloud generator.
+This project trains a PointNet++ U-Net DDPM for ShapeNet Airplane point cloud generation.
 
-The training data is saved as `.npy` point clouds:
+Assume the current terminal is in the parent directory of this project:
+
+```bash
+cd 3D-Diffusion-final-project
+conda activate final
+```
+
+## Paths
+
+```text
+Raw ShapeNet airplane meshes: data/02691156/
+Preprocessed point clouds:    data/airplane_points/
+Checkpoint:                   checkpoints/pointnet_unet_airplane.pth
+Generated point cloud:         outputs/airplane_sample.ply
+```
+
+## Prepare Data
+
+If `data/airplane_points/` already contains `.npy` point clouds, skip this step.
+
+`preprocess.py` reads airplane meshes from:
+
+```text
+data/02691156/
+```
+
+and saves point clouds to:
 
 ```text
 data/airplane_points/
 ```
 
-Each sample has shape:
+Run:
+
+```bash
+LD_LIBRARY_PATH=$CONDA_PREFIX/lib python preprocess.py
+```
+
+Each point cloud has shape:
 
 ```text
 [16384, 3]
 ```
 
-## Prepare Data
-
-If the `.npy` point clouds already exist, skip this step.
-
-To convert ShapeNet obj files to point clouds:
-
-```bash
-cd unet_pointnet++_pointcloud
-conda activate final
-LD_LIBRARY_PATH=$CONDA_PREFIX/lib python preprocess.py
-```
-
-Current `preprocess.py` uses:
-
-```text
-input_dir  = data/03001627
-output_dir = data/chair_points
-```
-
-Current `data.py` reads:
-
-```text
-data/airplane_points
-```
-
-Before training, make sure `preprocess.py` output path and `data.py` input path are the same.
-
 ## Train
 
 ```bash
-cd unet_pointnet++_pointcloud
-conda activate final
 LD_LIBRARY_PATH=$CONDA_PREFIX/lib python train.py
 ```
 
 The checkpoint is saved to:
 
 ```text
-checkpoints/pointnet_unet_airplain_8192*2_2e-5_8000.pth
+checkpoints/pointnet_unet_airplane.pth
 ```
 
 ## Sample
 
-Before sampling, make sure `checkpoint_path` in `sample.py` matches the checkpoint produced by `train.py`.
-
-Then run:
-
 ```bash
-cd unet_pointnet++_pointcloud
-conda activate final
 LD_LIBRARY_PATH=$CONDA_PREFIX/lib python sample.py
 ```
 
 The generated point cloud is saved to:
 
 ```text
-outputs/sample_chair.ply
+outputs/airplane_sample.ply
 ```

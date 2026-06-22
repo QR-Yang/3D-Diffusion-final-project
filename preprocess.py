@@ -1,8 +1,8 @@
 from pathlib import Path
 import numpy as np
 import trimesh
-input_dir = Path("data/03001627")
-output_dir = Path("data/chair_points")
+input_dir = Path("data/02691156")
+output_dir = Path("data/airplane_points")
 num_points = 8192 * 2
 def preprocess():
     output_dir.mkdir(exist_ok=True)

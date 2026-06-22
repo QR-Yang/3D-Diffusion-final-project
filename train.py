@@ -12,7 +12,7 @@ batch_size = 64
 num_epochs = 500
 lr = 2e-5
 num_train_timesteps = 8000
-save_path = "checkpoints/pointnet_unet_airplain_8192*2_2e-5_8000.pth"
+save_path = "checkpoints/pointnet_unet_airplane.pth"
 def train():
     device = "cuda" if torch.cuda.is_available() else "cpu"
     dataloader = get_dataloader(batch_size=batch_size)
