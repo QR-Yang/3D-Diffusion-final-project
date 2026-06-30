@@ -8,7 +8,7 @@ from model import PointNetUNet
 num_points = 4096*4
 num_train_timesteps = 8000
 num_inference_steps = 8000
-checkpoint_path = "checkpoints/pointnet_unet_airplane.pth"
+checkpoint_path = "checkpoints/pointnet_unet_chair.pth"
 save_dir = "outputs"
 def save_ply(points, path):
     with open(path, "w") as f:
@@ -36,7 +36,7 @@ def sample():
             x = scheduler.step(noise_pred, t, x).prev_sample
     points = x[0].cpu().numpy()
     Path(save_dir).mkdir(exist_ok=True)
-    save_path = f"{save_dir}/airplane_sample.ply"
+    save_path = f"{save_dir}/airplane_pointnet_unet_chair.ply"
     save_ply(points, save_path)
     print("saved:", save_path)
 if __name__ == "__main__":
